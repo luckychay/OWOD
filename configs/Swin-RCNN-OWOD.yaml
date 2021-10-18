@@ -1,0 +1,66 @@
+MODEL:
+  META_ARCHITECTURE: "GeneralizedRCNN"
+  BACKBONE:
+    NAME: "build_swin_fpn_backbone"
+  SWINS:
+    PATCH_SIZE: 4
+    IN_CHANS: 3
+    EMBED_DIM: 96
+    TYPE: "T"
+    NUM_HEADS: [3, 6, 12, 24]
+    WINDOW_SIZE: 7
+    MLP_RATIO: 4.
+    QKV_BIAS: True
+    DROP_RATE: 0.
+    ATTN_DROP_RATE: 0.
+    DROP_PATH_RATE: 0.2
+    APE: False
+    PATCH_NORM: True
+    OUT_FEATURES: ["swin0", "swin1", "swin2", "swin3"]
+    USE_CHECKPOINT: False
+  FPN:
+    IN_FEATURES: ["swin0", "swin1", "swin2", "swin3"]
+    #IN_CHANNELS: [96, 192, 384, 768]
+    OUT_CHANNELS: 256
+    #NUM_OUTS: 5
+  RPN:
+    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6"]
+    PRE_NMS_TOPK_TEST: 6000
+    POST_NMS_TOPK_TEST: 1000
+  ROI_HEADS:
+    #    NUM_CLASSES: 81 # 0-79 Known class; 80 -> Unknown; 81 -> Background.
+    NUM_CLASSES: 81
+    NAME: "Res5ROIHeads"
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  ROI_HEADS:
+    NAME: "StandardROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
+  ROI_BOX_HEAD:
+    NAME: "FastRCNNConvFCHead"
+    NUM_FC: 2
+    POOLER_RESOLUTION: 7
+INPUT:
+  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
+  MIN_SIZE_TEST: 800
+DATASETS:
+  TRAIN: ("coco_2017_train",)
+  TEST: ("coco_2017_val",)
+SOLVER:
+  IMS_PER_BATCH: 16
+  BASE_LR: 0.02
+  STEPS: (60000, 80000)
+  MAX_ITER: 90000
+VERSION: 2
+OWOD:
+  ENABLE_THRESHOLD_AUTOLABEL_UNK: True
+  NUM_UNK_PER_IMAGE: 1
+  ENABLE_UNCERTAINITY_AUTOLABEL_UNK: False
+  ENABLE_CLUSTERING: True
+  FEATURE_STORE_SAVE_PATH: 'feature_store'
+  CLUSTERING:
+    ITEMS_PER_CLASS: 20
+    START_ITER: 1000
+    UPDATE_MU_ITER: 3000
+    MOMENTUM: 0.99
+    Z_DIMENSION: 128

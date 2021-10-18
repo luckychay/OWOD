@@ -1,3 +1,10 @@
+'''
+Description: 
+Version: 
+Author: Xuanying Chen
+Date: 2021-10-17 12:26:23
+LastEditTime: 2021-10-17 12:31:11
+'''
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from detectron2.layers import ShapeSpec
 
@@ -5,11 +12,13 @@ from .anchor_generator import build_anchor_generator, ANCHOR_GENERATOR_REGISTRY
 from .backbone import (
     BACKBONE_REGISTRY,
     FPN,
+    SwinFPN,
     Backbone,
     ResNet,
     ResNetBlockBase,
     build_backbone,
     build_resnet_backbone,
+    build_swin_backbone,
     make_stage,
 )
 from .meta_arch import (

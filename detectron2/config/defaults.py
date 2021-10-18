@@ -134,7 +134,7 @@ _C.MODEL.BACKBONE.NAME = "build_resnet_backbone"
 # There are 5 stages in ResNet. The first is a convolution, and the following
 # stages are each group of residual blocks.
 _C.MODEL.BACKBONE.FREEZE_AT = 2
-
+_C.MODEL.BACKBONE.FROZEN_STAGES = -1
 
 # ---------------------------------------------------------------------------- #
 # FPN options
@@ -502,6 +502,31 @@ _C.MODEL.RESNETS.DEFORM_MODULATED = False
 # Number of groups in deformable conv.
 _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 
+
+
+# ---------------------------------------------------------------------------- #
+# Swin Transformer
+# ---------------------------------------------------------------------------- #
+
+_C.MODEL.SWINS = CN()
+
+
+_C.MODEL.SWINS.PATCH_SIZE = 4
+_C.MODEL.SWINS.IN_CHANS = 3
+_C.MODEL.SWINS.EMBED_DIM = 96
+_C.MODEL.SWINS.TYPE = "T"
+_C.MODEL.SWINS.NUM_HEADS = [3, 6, 12, 24]
+_C.MODEL.SWINS.WINDOW_SIZE = 7
+_C.MODEL.SWINS.MLP_RATIO = 4.
+_C.MODEL.SWINS.QKV_BIAS = True
+_C.MODEL.SWINS.QK_SCALE = None
+_C.MODEL.SWINS.DROP_RATE = 0.
+_C.MODEL.SWINS.ATTN_DROP_RATE = 0.
+_C.MODEL.SWINS.DROP_PATH_RATE = 0.2
+_C.MODEL.SWINS.APE = False
+_C.MODEL.SWINS.PATCH_NORM = True
+_C.MODEL.SWINS.OUT_FEATURES = ["swin0", "swin1", "swin2", "swin3"]
+_C.MODEL.SWINS.USE_CHECKPOINT = False
 
 # ---------------------------------------------------------------------------- #
 # Solver

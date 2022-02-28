@@ -22,11 +22,11 @@ RUN wget https://bootstrap.pypa.io/get-pip.py && \
 # install dependencies
 # See https://pytorch.org/ for other options if you use a different version of CUDA
 RUN pip install --user tensorboard
-RUN pip3 install torch==1.10.2+cu113 torchvision==0.11.3+cu113 torchaudio==0.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+RUN pip install torch==1.10.2+cu113 torchvision==0.11.3+cu113 torchaudio==0.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 
 RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
 # install detectron2
-RUN git clone https://github.com/facebookresearch/detectron2 detectron2_repo
+RUN git clone https://github.com/luckychay/OWOD OWOD
 # set FORCE_CUDA because during `docker build` cuda is not accessible
 ENV FORCE_CUDA="1"
 # This will by default build detectron2 for all common cuda architectures and take a lot more time,
@@ -34,11 +34,11 @@ ENV FORCE_CUDA="1"
 ARG TORCH_CUDA_ARCH_LIST="Kepler;Kepler+Tesla;Maxwell;Maxwell+Tegra;Pascal;Volta;Turing"
 ENV TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}"
 
-RUN pip install --user -e detectron2_repo
+RUN pip install --user -e OWOD
 
 # Set a fixed model cache directory.
 ENV FVCORE_CACHE="/tmp"
-WORKDIR /home/appuser/detectron2_repo
+WORKDIR /home/appuser/OWOD
 
 # run detectron2 under user "appuser":
 # wget http://images.cocodataset.org/val2017/000000439715.jpg -O input.jpg

@@ -82,11 +82,11 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
         fileids = np.loadtxt(f, dtype=np.str)
 
     # Needs to read many small annotation files. Makes sense at local
-    annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
+    annotation_dirname = PathManager.get_local_path(os.path.join("/content/drive/MyDrive/", "Annotations/"))
     dicts = []
     for fileid in fileids:
         anno_file = os.path.join(annotation_dirname, fileid + ".xml")
-        jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
+        jpeg_file = os.path.join("/content/drive/MyDrive/", "JPEGImages", fileid + ".jpg")
 
         try:
             with PathManager.open(anno_file) as f:

@@ -1,4 +1,4 @@
-_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
+_BASE_: "../../Swin-RCNN-OWOD.yaml"
 MODEL:
   WEIGHTS: "/content/drive/MyDrive/output/t2/model_final.pth"
 DATASETS:

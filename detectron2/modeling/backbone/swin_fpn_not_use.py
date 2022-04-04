@@ -10,8 +10,6 @@ from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
 from .swin_transformer import build_swin_backbone
 
-__all__ = ["build_swin_fpn_backbone", "SwinFPN"]
-
 
 class SwinFPN(Backbone):
 
@@ -48,9 +46,9 @@ class SwinFPN(Backbone):
         input_shapes = bottom_up.output_shape()
         strides = [input_shapes[f].stride for f in in_features]
         in_channels_per_feature = [input_shapes[f].channels for f in in_features]
-        print("strides", strides)
-        print("input_shapes:",input_shapes)
-        print("in_channels_per_feature",in_channels_per_feature)
+        # print("strides", strides)
+        # print("input_shapes:",input_shapes)
+        # print("in_channels_per_feature",in_channels_per_feature)
         # strides = [4,8,16,32]
         # in_channels_per_feature=[96, 192, 384, 768]
 

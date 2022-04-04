@@ -45,6 +45,7 @@ def build_roi_heads(cfg, input_shape):
     Build ROIHeads defined by `cfg.MODEL.ROI_HEADS.NAME`.
     """
     name = cfg.MODEL.ROI_HEADS.NAME
+    print("--------------------build roi heads----------------",name)
     return ROI_HEADS_REGISTRY.get(name)(cfg, input_shape)
 
 
@@ -383,6 +384,7 @@ class Res5ROIHeads(ROIHeads):
         self.in_features  = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
+        print(self.in_features)
         pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
@@ -474,6 +476,7 @@ class Res5ROIHeads(ROIHeads):
 
         if self.training:
             # self.log_features(input_features, proposals)
+            print("-------------------befor clustering--------------------------")
             if self.enable_clustering:
                 self.box_predictor.update_feature_store(input_features, proposals)
             del features
@@ -876,3 +879,43 @@ class StandardROIHeads(ROIHeads):
         else:
             features = {f: features[f] for f in self.keypoint_in_features}
         return self.keypoint_head(features, instances)
+
+
+@ROI_HEADS_REGISTRY.register()
+class SwinROIHeads(StandardROIHeads):
+    @configurable
+    def __init__(
+        self,
+        *,
+        box_in_features: List[str],
+        box_pooler: ROIPooler,
+        box_head: nn.Module,
+        box_predictor: nn.Module,
+        mask_in_features: Optional[List[str]] = None,
+        mask_pooler: Optional[ROIPooler] = None,
+        mask_head: Optional[nn.Module] = None,
+        keypoint_in_features: Optional[List[str]] = None,
+        keypoint_pooler: Optional[ROIPooler] = None,
+        keypoint_head: Optional[nn.Module] = None,
+        train_on_pred_boxes: bool = False,
+        **kwargs
+    ):
+
+    super().__init__(
+        self,
+        *,
+        box_in_features: List[str],
+        box_pooler: ROIPooler,
+        box_head: nn.Module,
+        box_predictor: nn.Module,
+        mask_in_features: Optional[List[str]] = None,
+        mask_pooler: Optional[ROIPooler] = None,
+        mask_head: Optional[nn.Module] = None,
+        keypoint_in_features: Optional[List[str]] = None,
+        keypoint_pooler: Optional[ROIPooler] = None,
+        keypoint_head: Optional[nn.Module] = None,
+        train_on_pred_boxes: bool = False,
+        **kwargs
+    )
+
+

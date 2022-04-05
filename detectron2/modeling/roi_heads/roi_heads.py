@@ -229,6 +229,7 @@ class ROIHeads(torch.nn.Module):
         sampled_idxs = torch.cat([sampled_fg_idxs, sampled_bg_idxs], dim=0)
         gt_classes_ss = gt_classes[sampled_idxs]
 
+        ##********************use RPN to autolabel unknown objects**************************
         if self.enable_thresold_autolabelling:
             matched_labels_ss = matched_labels[sampled_idxs]
             pred_objectness_score_ss = objectness_logits[sampled_idxs]
@@ -834,7 +835,7 @@ class StandardROIHeads(ROIHeads):
             if self.compute_energy_flag:
                 self.compute_energy(predictions, proposals)
 
-            losses = self.box_predictor.losses(predictions, proposals)
+            losses = self.box_predictor.losses(predictions, proposals, box_features)
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
                 with torch.no_grad():

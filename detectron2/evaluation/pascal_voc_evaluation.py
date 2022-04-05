@@ -93,6 +93,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
     def update_label_based_on_energy(self, logits, classes):
         if not self.energy_distribution_loaded:
+            print("-------------------------------energy not loaded....")
             return classes
         else:
             cls = classes
@@ -119,7 +120,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             scores = instances.scores.tolist()
             classes = instances.pred_classes.tolist()
             logits = instances.logits
+            print("-----------------------------classes before update:",classes)
             classes = self.update_label_based_on_energy(logits, classes)
+            print("-----------------------------classes after update:",classes)
             for box, score, cls in zip(boxes, scores, classes):
                 if cls == -100:
                     continue

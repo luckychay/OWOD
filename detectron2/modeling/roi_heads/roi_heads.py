@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import heapq
 import os
+from numpy import disp
 import shortuuid
 import operator
 import shortuuid
@@ -45,7 +46,6 @@ def build_roi_heads(cfg, input_shape):
     Build ROIHeads defined by `cfg.MODEL.ROI_HEADS.NAME`.
     """
     name = cfg.MODEL.ROI_HEADS.NAME
-    print("--------------------build roi heads----------------",name)
     return ROI_HEADS_REGISTRY.get(name)(cfg, input_shape)
 
 
@@ -384,7 +384,6 @@ class Res5ROIHeads(ROIHeads):
         self.in_features  = cfg.MODEL.ROI_HEADS.IN_FEATURES
         pooler_resolution = cfg.MODEL.ROI_BOX_HEAD.POOLER_RESOLUTION
         pooler_type       = cfg.MODEL.ROI_BOX_HEAD.POOLER_TYPE
-        print(self.in_features)
         pooler_scales     = (1.0 / input_shape[self.in_features[0]].stride, )
         sampling_ratio    = cfg.MODEL.ROI_BOX_HEAD.POOLER_SAMPLING_RATIO
         self.mask_on      = cfg.MODEL.MASK_ON
@@ -476,7 +475,6 @@ class Res5ROIHeads(ROIHeads):
 
         if self.training:
             # self.log_features(input_features, proposals)
-            print("-------------------befor clustering--------------------------")
             if self.enable_clustering:
                 self.box_predictor.update_feature_store(input_features, proposals)
             del features
@@ -546,6 +544,9 @@ class StandardROIHeads(ROIHeads):
         box_pooler: ROIPooler,
         box_head: nn.Module,
         box_predictor: nn.Module,
+        enable_clustering: bool,
+        compute_energy_flag: bool,
+        energy_save_path: str,
         mask_in_features: Optional[List[str]] = None,
         mask_pooler: Optional[ROIPooler] = None,
         mask_head: Optional[nn.Module] = None,
@@ -582,6 +583,10 @@ class StandardROIHeads(ROIHeads):
         self.box_head = box_head
         self.box_predictor = box_predictor
 
+        self.enable_clustering = enable_clustering
+        self.compute_energy_flag = compute_energy_flag
+        self.energy_save_path = energy_save_path
+
         self.mask_on = mask_in_features is not None
         if self.mask_on:
             self.mask_in_features = mask_in_features
@@ -606,6 +611,8 @@ class StandardROIHeads(ROIHeads):
         # Such subclasses will need to handle calling their overridden _init_*_head methods.
         if inspect.ismethod(cls._init_box_head):
             ret.update(cls._init_box_head(cfg, input_shape))
+        if inspect.ismethod(cls._init_box_head):
+            ret.update(cls._init_owod_head(cfg, input_shape))
         if inspect.ismethod(cls._init_mask_head):
             ret.update(cls._init_mask_head(cfg, input_shape))
         if inspect.ismethod(cls._init_keypoint_head):
@@ -717,6 +724,26 @@ class StandardROIHeads(ROIHeads):
         ret["keypoint_head"] = build_keypoint_head(cfg, shape)
         return ret
 
+    @classmethod
+    def _init_owod_head(cls, cfg, input_shape):
+        enable_clustering = cfg.OWOD.ENABLE_CLUSTERING
+        compute_energy_flag = cfg.OWOD.COMPUTE_ENERGY
+        print("enable_clustering",enable_clustering)
+        print("compute_energy_flag",compute_energy_flag)
+        energy_save_path = os.path.join(cfg.OUTPUT_DIR, cfg.OWOD.ENERGY_SAVE_PATH)
+        return {
+            "enable_clustering": enable_clustering,
+            "compute_energy_flag": compute_energy_flag,
+            "energy_save_path": energy_save_path,
+        }
+
+    def compute_energy(self, predictions, proposals):
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        logits = predictions[0]
+        data = (logits, gt_classes)
+        location = os.path.join(self.energy_save_path, shortuuid.uuid() + '.pkl')
+        torch.save(data, location)
+
     def forward(
         self,
         images: ImageList,
@@ -734,6 +761,7 @@ class StandardROIHeads(ROIHeads):
         del targets
 
         if self.training:
+
             losses = self._forward_box(features, proposals)
             # Usually the original proposals used by the box head are used by the mask, keypoint
             # heads. But when `self.train_on_pred_boxes is True`, proposals will contain boxes
@@ -798,9 +826,14 @@ class StandardROIHeads(ROIHeads):
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         predictions = self.box_predictor(box_features)
-        del box_features
 
         if self.training:
+            if self.enable_clustering:
+                self.box_predictor.update_feature_store(box_features, proposals)
+            del box_features
+            if self.compute_energy_flag:
+                self.compute_energy(predictions, proposals)
+
             losses = self.box_predictor.losses(predictions, proposals)
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
@@ -881,41 +914,5 @@ class StandardROIHeads(ROIHeads):
         return self.keypoint_head(features, instances)
 
 
-@ROI_HEADS_REGISTRY.register()
-class SwinROIHeads(StandardROIHeads):
-    @configurable
-    def __init__(
-        self,
-        *,
-        box_in_features: List[str],
-        box_pooler: ROIPooler,
-        box_head: nn.Module,
-        box_predictor: nn.Module,
-        mask_in_features: Optional[List[str]] = None,
-        mask_pooler: Optional[ROIPooler] = None,
-        mask_head: Optional[nn.Module] = None,
-        keypoint_in_features: Optional[List[str]] = None,
-        keypoint_pooler: Optional[ROIPooler] = None,
-        keypoint_head: Optional[nn.Module] = None,
-        train_on_pred_boxes: bool = False,
-        **kwargs
-    ):
-
-    super().__init__(
-        self,
-        *,
-        box_in_features: List[str],
-        box_pooler: ROIPooler,
-        box_head: nn.Module,
-        box_predictor: nn.Module,
-        mask_in_features: Optional[List[str]] = None,
-        mask_pooler: Optional[ROIPooler] = None,
-        mask_head: Optional[nn.Module] = None,
-        keypoint_in_features: Optional[List[str]] = None,
-        keypoint_pooler: Optional[ROIPooler] = None,
-        keypoint_head: Optional[nn.Module] = None,
-        train_on_pred_boxes: bool = False,
-        **kwargs
-    )
 
 

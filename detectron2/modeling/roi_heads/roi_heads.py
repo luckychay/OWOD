@@ -831,11 +831,11 @@ class StandardROIHeads(ROIHeads):
         if self.training:
             if self.enable_clustering:
                 self.box_predictor.update_feature_store(box_features, proposals)
-            del box_features
             if self.compute_energy_flag:
                 self.compute_energy(predictions, proposals)
 
             losses = self.box_predictor.losses(predictions, proposals, box_features)
+            del box_features
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
                 with torch.no_grad():

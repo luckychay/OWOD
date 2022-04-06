@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import logging
 from typing import Dict, Union
+from numpy import c_
 import torch
 import os
 import math
@@ -480,6 +481,7 @@ class FastRCNNOutputLayers(nn.Module):
 
         self.hingeloss = nn.HingeEmbeddingLoss(2)
         self.enable_clustering = enable_clustering
+        print("-------------------------------RCNN enable clustering:",self.enable_clustering)
 
         self.prev_intro_cls = prev_intro_cls
         self.curr_intro_cls = curr_intro_cls
@@ -496,7 +498,6 @@ class FastRCNNOutputLayers(nn.Module):
         if os.path.isfile(self.feature_store_save_loc):
             logging.getLogger(__name__).info('Trying to load feature store from ' + self.feature_store_save_loc)
             self.feature_store = torch.load(self.feature_store_save_loc)
-            print("--------------------",self.feature_store)
         else:
             logging.getLogger(__name__).info('Feature store not found in ' +
                                              self.feature_store_save_loc + '. Creating new feature store.')
@@ -622,6 +623,7 @@ class FastRCNNOutputLayers(nn.Module):
         storage = get_event_storage()
         c_loss = 0
         if storage.iter == self.clustering_start_iter:
+            print("------clustering_start_iter:",self.clustering_start_iter)
             items = self.feature_store.retrieve(-1)
             for index, item in enumerate(items):
                 if len(item) == 0:
@@ -650,6 +652,8 @@ class FastRCNNOutputLayers(nn.Module):
                                         (1 - self.clustering_momentum) * new_means[i]
 
             c_loss = self.clstr_loss_l2_cdist(input_features, proposals)
+
+        print("-----------------------c_loss",c_loss)
         return c_loss
 
     # def get_ae_loss(self, input_features):

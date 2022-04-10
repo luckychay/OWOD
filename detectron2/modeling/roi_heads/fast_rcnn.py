@@ -497,6 +497,7 @@ class FastRCNNOutputLayers(nn.Module):
         self.feat_store_path = feat_store_path
         self.feature_store_save_loc = os.path.join(self.output_dir, self.feat_store_path, 'feat.pt')
 
+        self.means = [None for _ in range(num_classes + 1)]
         if os.path.isfile(self.feature_store_save_loc):
             logging.getLogger(__name__).info('Trying to load feature store from ' + self.feature_store_save_loc)
             self.feature_store = torch.load(self.feature_store_save_loc)
@@ -510,9 +511,8 @@ class FastRCNNOutputLayers(nn.Module):
         else:
             logging.getLogger(__name__).info('Feature store not found in ' +
                                              self.feature_store_save_loc + '. Creating new feature store.')
-            self.feature_store = Store(num_classes + 1, clustering_items_per_class)
-            self.means = [None for _ in range(num_classes + 1)]
-            
+            self.feature_store = Store(num_classes + 1, clustering_items_per_class)       
+
         self.margin = margin
 
         # self.ae_model = AE(input_size, clustering_z_dimension)

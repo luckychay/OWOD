@@ -5,8 +5,8 @@ DATASETS:
   TRAIN: ('t1_voc_coco_2007_train', ) # t1_voc_coco_2007_train, t1_voc_coco_2007_ft
   TEST: ('voc_coco_2007_test', 't1_voc_coco_2007_known_test')   # voc_coco_2007_test, t1_voc_coco_2007_test, t1_voc_coco_2007_val
 SOLVER:
-  STEPS: (12000, 16000)
-  MAX_ITER: 18000
+  STEPS: (24000, 32000)
+  MAX_ITER: 36000
   WARMUP_ITERS: 100
 OUTPUT_DIR: "/home/appuser/OWOD/output/t1"
 OWOD:

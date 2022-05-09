@@ -120,9 +120,11 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             scores = instances.scores.tolist()
             classes = instances.pred_classes.tolist()
             logits = instances.logits
-            print("-----------------------------classes before update:",classes)
+            old_classes = classes
             classes = self.update_label_based_on_energy(logits, classes)
-            print("-----------------------------classes after update:",classes)
+            if classes != old_classes:
+                print("-----------------------------classes before update:",old_classes)
+                print("-----------------------------classes after update:",classes)
             for box, score, cls in zip(boxes, scores, classes):
                 if cls == -100:
                     continue

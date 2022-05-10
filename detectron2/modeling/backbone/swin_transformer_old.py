@@ -1,18 +1,28 @@
 # --------------------------------------------------------
 # Swin Transformer
-# modified from https://github.com/SwinTransformer/Swin-Transformer-Object-Detection/blob/master/mmdet/models/backbones/swin_transformer.py
+# Copyright (c) 2021 Microsoft
+# Licensed under The MIT License [see LICENSE for details]
+# Written by Ze Liu, Yutong Lin, Yixuan Wei
 # --------------------------------------------------------
 
+from typing import Type
 import torch
+from torch.functional import norm
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 import numpy as np
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
+# from mmcv_custom import load_checkpoint
+# from mmdet.utils import get_root_logger
+# from ..builder import BACKBONES
+
+import logging
 from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
 from detectron2.layers import ShapeSpec
+
 
 
 class Mlp(nn.Module):
@@ -41,6 +51,7 @@ def window_partition(x, window_size):
     Args:
         x: (B, H, W, C)
         window_size (int): window size
+
     Returns:
         windows: (num_windows*B, window_size, window_size, C)
     """
@@ -57,6 +68,7 @@ def window_reverse(windows, window_size, H, W):
         window_size (int): Window size
         H (int): Height of image
         W (int): Width of image
+
     Returns:
         x: (B, H, W, C)
     """
@@ -69,6 +81,7 @@ def window_reverse(windows, window_size, H, W):
 class WindowAttention(nn.Module):
     """ Window based multi-head self attention (W-MSA) module with relative position bias.
     It supports both of shifted and non-shifted window.
+
     Args:
         dim (int): Number of input channels.
         window_size (tuple[int]): The height and width of the window.
@@ -115,6 +128,7 @@ class WindowAttention(nn.Module):
 
     def forward(self, x, mask=None):
         """ Forward function.
+
         Args:
             x: input features with shape of (num_windows*B, N, C)
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
@@ -149,6 +163,7 @@ class WindowAttention(nn.Module):
 
 class SwinTransformerBlock(nn.Module):
     """ Swin Transformer Block.
+
     Args:
         dim (int): Number of input channels.
         num_heads (int): Number of attention heads.
@@ -190,6 +205,7 @@ class SwinTransformerBlock(nn.Module):
 
     def forward(self, x, mask_matrix):
         """ Forward function.
+
         Args:
             x: Input feature, tensor size (B, H*W, C).
             H, W: Spatial resolution of the input feature.
@@ -249,6 +265,7 @@ class SwinTransformerBlock(nn.Module):
 
 class PatchMerging(nn.Module):
     """ Patch Merging Layer
+
     Args:
         dim (int): Number of input channels.
         norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
@@ -261,6 +278,7 @@ class PatchMerging(nn.Module):
 
     def forward(self, x, H, W):
         """ Forward function.
+
         Args:
             x: Input feature, tensor size (B, H*W, C).
             H, W: Spatial resolution of the input feature.
@@ -290,6 +308,7 @@ class PatchMerging(nn.Module):
 
 class BasicLayer(nn.Module):
     """ A basic Swin Transformer layer for one stage.
+
     Args:
         dim (int): Number of feature channels
         depth (int): Depths of this stage.
@@ -350,6 +369,7 @@ class BasicLayer(nn.Module):
 
     def forward(self, x, H, W):
         """ Forward function.
+
         Args:
             x: Input feature, tensor size (B, H*W, C).
             H, W: Spatial resolution of the input feature.
@@ -392,6 +412,7 @@ class BasicLayer(nn.Module):
 
 class PatchEmbed(nn.Module):
     """ Image to Patch Embedding
+
     Args:
         patch_size (int): Patch token size. Default: 4.
         in_chans (int): Number of input image channels. Default: 3.
@@ -436,6 +457,7 @@ class SwinTransformer(Backbone):
     """ Swin Transformer backbone.
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
+
     Args:
         pretrain_img_size (int): Input image size for training the pretrained model,
             used in absolute postion embedding. Default 224.
@@ -460,93 +482,55 @@ class SwinTransformer(Backbone):
         use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False.
     """
 
-    def __init__(self,
-                 pretrain_img_size=224,
-                 patch_size=4,
-                 in_chans=3,
-                 embed_dim=96,
-                 depths=[2, 2, 6, 2],
-                 num_heads=[3, 6, 12, 24],
-                 window_size=7,
-                 mlp_ratio=4.,
-                 qkv_bias=True,
-                 qk_scale=None,
-                 drop_rate=0.,
-                 attn_drop_rate=0.,
-                 drop_path_rate=0.2,
-                 norm_layer=nn.LayerNorm,
-                 ape=False,
-                 patch_norm=True,
-                 frozen_stages=-1,
-                 use_checkpoint=False,
-                 out_features=None):
-        super(SwinTransformer, self).__init__()
+    def __init__(self,kargs,layers,out_features=None):
+        super().__init__()
 
-        self.pretrain_img_size = pretrain_img_size
-        self.num_layers = len(depths)
-        self.embed_dim = embed_dim
-        self.ape = ape
-        self.patch_norm = patch_norm
-        self.frozen_stages = frozen_stages
+        self.pretrain_img_size = kargs["pretrain_img_size"]
+        self.num_layers = len(layers)
+        self.embed_dim = kargs["embed_dim"]
+        self.ape = kargs["ape"]
+        self.patch_norm = kargs["patch_norm"]
+        self.frozen_stages = kargs["frozen_stages"]
+        self.norm_layer = kargs["norm_layer"]
 
-        self.out_features = out_features
-
+        
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
-            patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim,
-            norm_layer=norm_layer if self.patch_norm else None)
+            patch_size=kargs["patch_size"], in_chans=kargs["in_chans"], embed_dim=self.embed_dim,
+            norm_layer=kargs["norm_layer"] if self.patch_norm else None)
+
+        current_stride = kargs["patch_size"]
+        self._out_feature_strides = {"embed": current_stride}
+        self._out_feature_channels = {"embed": self.patch_embed.embed_dim}
 
         # absolute position embedding
         if self.ape:
-            pretrain_img_size = to_2tuple(pretrain_img_size)
-            patch_size = to_2tuple(patch_size)
+            pretrain_img_size = to_2tuple(self.pretrain_img_size)
+            patch_size = to_2tuple(kargs["patch_size"])
             patches_resolution = [pretrain_img_size[0] // patch_size[0], pretrain_img_size[1] // patch_size[1]]
 
-            self.absolute_pos_embed = nn.Parameter(torch.zeros(1, embed_dim, patches_resolution[0], patches_resolution[1]))
+            self.absolute_pos_embed = nn.Parameter(torch.zeros(1, self.embed_dim, patches_resolution[0], patches_resolution[1]))
             trunc_normal_(self.absolute_pos_embed, std=.02)
 
-        self.pos_drop = nn.Dropout(p=drop_rate)
-
-        # stochastic depth
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
-
-        self._out_feature_strides = {}
-        self._out_feature_channels = {}
+        self.pos_drop = nn.Dropout(p=kargs["drop_rate"])
 
         # build layers
-        self.layers = nn.ModuleList()
-        for i_layer in range(self.num_layers):
-            layer = BasicLayer(
-                dim=int(embed_dim * 2 ** i_layer),
-                depth=depths[i_layer],
-                num_heads=num_heads[i_layer],
-                window_size=window_size,
-                mlp_ratio=mlp_ratio,
-                qkv_bias=qkv_bias,
-                qk_scale=qk_scale,
-                drop=drop_rate,
-                attn_drop=attn_drop_rate,
-                drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],
-                norm_layer=norm_layer,
-                downsample=PatchMerging if (i_layer < self.num_layers - 1) else None,
-                use_checkpoint=use_checkpoint)
-            self.layers.append(layer)
+        self.layers = layers
+        self.layers_and_names = []
 
-            stage = f'stage{i_layer+2}'
-            if stage in self.out_features:
-                self._out_feature_channels[stage] = embed_dim * 2 ** i_layer
-                self._out_feature_strides[stage] = 4 * 2 ** i_layer
- 
-        num_features = [int(embed_dim * 2 ** i) for i in range(self.num_layers)]
-        self.num_features = num_features
+        for i, layer in enumerate(layers):
+            name = "swin" + str(i)
+            
+            self._out_feature_channels[name] = int(self.embed_dim * 2 ** i)
+            self._out_feature_strides[name] = current_stride * 2 ** i
 
-        # add a norm layer for each output
-        for i_layer in range(self.num_layers):
-            stage = f'stage{i_layer+2}'
-            if stage in self.out_features:
-                layer = norm_layer(num_features[i_layer])
-                layer_name = f'norm{i_layer}'
-                self.add_module(layer_name, layer)
+            norm = kargs["norm_layer"](self._out_feature_channels[name])
+
+            norm_name = f'norm{i}'
+            self.add_module(norm_name, norm)
+            self.layers_and_names.append((layer, name))
+            
+        self._out_features = out_features
 
         self._freeze_stages()
 
@@ -567,8 +551,31 @@ class SwinTransformer(Backbone):
                 for param in m.parameters():
                     param.requires_grad = False
 
+    @staticmethod 
+    def make_stage(first_stride=None, *, in_channels, **kwargs):
+        """out_channels"""
+
+        layer = BasicLayer(
+                dim=in_channels,
+                depth=kwargs["depth"],
+                num_heads=kwargs["num_heads"],
+                window_size=kwargs["window_size"],
+                mlp_ratio=kwargs["mlp_ratio"],
+                qkv_bias=kwargs["qkv_bias"],
+                qk_scale=kwargs["qk_scale"],
+                drop=kwargs["drop_rate"],
+                attn_drop=kwargs["attn_drop_rate"],
+                drop_path=kwargs["drop_path"],
+                norm_layer=kwargs["norm_layer"],
+                downsample=kwargs["downsample"],
+                use_checkpoint=kwargs["use_checkpoint"]
+                )
+
+        return layer
+
     def init_weights(self, pretrained=None):
         """Initialize the weights in backbone.
+
         Args:
             pretrained (str, optional): Path to pre-trained weights.
                 Defaults to None.
@@ -583,11 +590,18 @@ class SwinTransformer(Backbone):
                 nn.init.constant_(m.bias, 0)
                 nn.init.constant_(m.weight, 1.0)
 
+     
         self.apply(_init_weights)
+   
 
     def forward(self, x):
         """Forward function."""
+        outputs = {}
+
         x = self.patch_embed(x)
+
+        if "embed" in self._out_features:
+            outputs["embed"] = x
 
         Wh, Ww = x.size(2), x.size(3)
         if self.ape:
@@ -598,62 +612,112 @@ class SwinTransformer(Backbone):
             x = x.flatten(2).transpose(1, 2)
         x = self.pos_drop(x)
 
-        outs = {}
-        for i in range(self.num_layers):
-            layer = self.layers[i]
+        i = 0
+        for layer, name in self.layers_and_names:
             x_out, H, W, x, Wh, Ww = layer(x, Wh, Ww)
-            name = f'stage{i+2}'
-            if name in self.out_features:
+            if name in self._out_features:
                 norm_layer = getattr(self, f'norm{i}')
                 x_out = norm_layer(x_out)
-                out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
-                outs[name] = out
+                out = x_out.view(-1, H, W, self._out_feature_channels[name]).permute(0, 3, 1, 2).contiguous()
+                outputs[name] = out
+            i += 1
 
-        return outs #{"stage%d" % (i+2,): out for i, out in enumerate(outs)} #tuple(outs)
-
-    def train(self, mode=True):
-        """Convert the model into training mode while keep layers freezed."""
-        super(SwinTransformer, self).train(mode)
-        self._freeze_stages()
+        return outputs
 
     def output_shape(self):
         return {
             name: ShapeSpec(
                 channels=self._out_feature_channels[name], stride=self._out_feature_strides[name]
             )
-            for name in self.out_features
+            for name in self._out_features
         }
 
+    def train(self, mode=True):
+        """Convert the model into training mode while keep layers freezed."""
+        super(SwinTransformer, self).train(mode)
+        self._freeze_stages()
+
 @BACKBONE_REGISTRY.register()
-def build_swint_backbone(cfg, input_shape):
+def build_swin_backbone(cfg, input_shape):
     """
-    Create a SwinT instance from config.
+    Create a Swin Transformer instance from config.
 
     Returns:
-        VoVNet: a :class:`VoVNet` instance.
+        Swin: a :class:`Swin Transformer` instance.
     """
-    out_features = cfg.MODEL.SWINT.OUT_FEATURES
 
-    return SwinTransformer(
-        patch_size=4,
-        in_chans=input_shape.channels,
-        embed_dim=cfg.MODEL.SWINT.EMBED_DIM,
-        depths=cfg.MODEL.SWINT.DEPTHS,
-        num_heads=cfg.MODEL.SWINT.NUM_HEADS,
-        window_size=cfg.MODEL.SWINT.WINDOW_SIZE,
-        mlp_ratio=cfg.MODEL.SWINT.MLP_RATIO,
-        qkv_bias=True,
-        qk_scale=None,
-        drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=cfg.MODEL.SWINT.DROP_PATH_RATE,
-        norm_layer=nn.LayerNorm,
-        ape=cfg.MODEL.SWINT.APE,
-        patch_norm=True,
-        frozen_stages=cfg.MODEL.BACKBONE.FREEZE_AT,
-        out_features=out_features
-    )
+    # fmt: off
+    patch_size          = cfg.MODEL.SWINS.PATCH_SIZE
+    in_chans            = input_shape.channels
+    embed_dim           = cfg.MODEL.SWINS.EMBED_DIM
+    type                = cfg.MODEL.SWINS.TYPE
+    num_heads           = cfg.MODEL.SWINS.NUM_HEADS
+    window_size         = cfg.MODEL.SWINS.WINDOW_SIZE
+    mlp_ratio           = cfg.MODEL.SWINS.MLP_RATIO
+    qkv_bias            = cfg.MODEL.SWINS.QKV_BIAS
+    qk_scale            = cfg.MODEL.SWINS.QK_SCALE
+    drop_rate           = cfg.MODEL.SWINS.DROP_RATE
+    attn_drop_rate      = cfg.MODEL.SWINS.ATTN_DROP_RATE
+    drop_path_rate      = cfg.MODEL.SWINS.DROP_PATH_RATE
+    ape                 = cfg.MODEL.SWINS.APE
+    patch_norm          = cfg.MODEL.SWINS.PATCH_NORM
+    out_features         = cfg.MODEL.SWINS.OUT_FEATURES
+    use_checkpoint      = cfg.MODEL.SWINS.USE_CHECKPOINT
+    frozen_stages       = cfg.MODEL.BACKBONE.FROZEN_STAGES
+    
+    norm_layer          = nn.LayerNorm
+    # fmt: on
 
+    params_per_type = {
+        "T": {"num_blocks_per_stage":[2, 2, 6 , 2],"embed_dims":96},
+        "S": {"num_blocks_per_stage":[2, 2, 18, 2],"embed_dims":96},
+        "B": {"num_blocks_per_stage":[2, 2, 18, 2],"embed_dims":128},
+        "L": {"num_blocks_per_stage":[2, 2, 18, 2],"embed_dims":192},
+    }[type]
 
+    kargs = {
+        "pretrain_img_size": cfg.MODEL.SWINS.PRETRAIN_IMG_SIZE if ape else None, 
+        "patch_size": patch_size,
+        "in_chans": in_chans,
+        "embed_dim": embed_dim,
+        "ape": ape,
+        "patch_norm": patch_norm,
+        "frozen_stages": frozen_stages,
+        "out_features": out_features,
+        "norm_layer": norm_layer,
+        "params_per_type": params_per_type,
+        "drop_rate": drop_rate,
+        "drop_path_rate": drop_path_rate,
+        "use_checkpoint": use_checkpoint,
+    }
 
+    layers = nn.ModuleList()
 
+    # stochastic depth
+    dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(params_per_type["num_blocks_per_stage"]))]  # stochastic depth decay rule
+
+    out_stage_idx = [{"swin0": 0, "swin1": 1, "swin2": 2, "swin3": 3}[f] for f in out_features]
+    # out_stage_idx = out_indices
+    for stage_idx in range(max(out_stage_idx)+1):
+        stage_kargs = {
+            "in_channels": int(embed_dim*2**stage_idx),
+            #"out_channels": int(embed_dim*2**stage_idx+1),
+            "depth": params_per_type["num_blocks_per_stage"][stage_idx],
+            "num_heads": num_heads[stage_idx],
+            "window_size": window_size,
+            "mlp_ratio": mlp_ratio,
+            "qkv_bias": qkv_bias,
+            "qk_scale": qk_scale,
+            "drop_rate": drop_rate,
+            "drop_path_rate": drop_path_rate,
+            "attn_drop_rate": attn_drop_rate,
+            "norm_layer": norm_layer,
+            "drop_path": dpr[sum(params_per_type["num_blocks_per_stage"][:stage_idx]):sum(params_per_type["num_blocks_per_stage"][:stage_idx + 1])],
+            "downsample": PatchMerging if (stage_idx < max(out_stage_idx)) else None,
+            "use_checkpoint": use_checkpoint,
+        }
+
+        layer = SwinTransformer.make_stage(**stage_kargs)
+        layers.append(layer)
+    return SwinTransformer(kargs,layers,out_features)
+    

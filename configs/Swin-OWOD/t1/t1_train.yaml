@@ -1,6 +1,6 @@
-_BASE_: "../../Swin-RCNN-OWOD.yaml"
+_BASE_: "../../SWIN-RCNN-FPN-OWOD.yaml"
 MODEL:
-  WEIGHTS: "/home/appuser/OWOD/swin_tiny_patch4_window7_224_d2.pth"
+  WEIGHTS: "/content/drive/MyDrive/swin_tiny_patch4_window7_224_d2.pth"
 DATASETS:
   TRAIN: ('t1_voc_coco_2007_train', ) # t1_voc_coco_2007_train, t1_voc_coco_2007_ft
   TEST: ('voc_coco_2007_test', 't1_voc_coco_2007_known_test')   # voc_coco_2007_test, t1_voc_coco_2007_test, t1_voc_coco_2007_val

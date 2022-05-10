@@ -482,7 +482,6 @@ class FastRCNNOutputLayers(nn.Module):
 
         self.hingeloss = nn.HingeEmbeddingLoss(2)
         self.enable_clustering = enable_clustering
-        print("-------------------------------RCNN enable clustering:",self.enable_clustering)
 
         self.prev_intro_cls = prev_intro_cls
         self.curr_intro_cls = curr_intro_cls

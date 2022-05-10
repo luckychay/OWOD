@@ -152,6 +152,8 @@ _C.MODEL.FPN.NORM = ""
 # Types for fusing the FPN top-down and lateral features. Can be either "sum" or "avg"
 _C.MODEL.FPN.FUSE_TYPE = "sum"
 
+# add swin t
+_C.MODEL.FPN.TOP_LEVELS = 2
 
 # ---------------------------------------------------------------------------- #
 # Proposal generator options
@@ -508,25 +510,17 @@ _C.MODEL.RESNETS.DEFORM_NUM_GROUPS = 1
 # Swin Transformer
 # ---------------------------------------------------------------------------- #
 
-_C.MODEL.SWINS = CN()
+_C.MODEL.SWINT = CN()
 
-
-_C.MODEL.SWINS.PATCH_SIZE = 4
-_C.MODEL.SWINS.IN_CHANS = 3
-_C.MODEL.SWINS.EMBED_DIM = 96
-_C.MODEL.SWINS.TYPE = "T"
-_C.MODEL.SWINS.NUM_HEADS = [3, 6, 12, 24]
-_C.MODEL.SWINS.WINDOW_SIZE = 7
-_C.MODEL.SWINS.MLP_RATIO = 4.
-_C.MODEL.SWINS.QKV_BIAS = True
-_C.MODEL.SWINS.QK_SCALE = None
-_C.MODEL.SWINS.DROP_RATE = 0.
-_C.MODEL.SWINS.ATTN_DROP_RATE = 0.
-_C.MODEL.SWINS.DROP_PATH_RATE = 0.2
-_C.MODEL.SWINS.APE = False
-_C.MODEL.SWINS.PATCH_NORM = True
-_C.MODEL.SWINS.OUT_FEATURES = ["swin0", "swin1", "swin2", "swin3"]
-_C.MODEL.SWINS.USE_CHECKPOINT = False
+_C.MODEL.SWINT.EMBED_DIM = 96
+_C.MODEL.SWINT.OUT_FEATURES = ["stage2", "stage3", "stage4", "stage5"]
+_C.MODEL.SWINT.DEPTHS = [2, 2, 6, 2]
+_C.MODEL.SWINT.NUM_HEADS = [3, 6, 12, 24]
+_C.MODEL.SWINT.WINDOW_SIZE = 7
+_C.MODEL.SWINT.MLP_RATIO = 4
+_C.MODEL.SWINT.DROP_PATH_RATE = 0.2
+_C.MODEL.SWINT.APE = False
+_C.MODEL.BACKBONE.FREEZE_AT = -1
 
 # ---------------------------------------------------------------------------- #
 # Solver
@@ -593,6 +587,11 @@ _C.SOLVER.CLIP_GRADIENTS.CLIP_VALUE = 1.0
 # gradient clipping type; for L-inf, please specify .inf
 _C.SOLVER.CLIP_GRADIENTS.NORM_TYPE = 2.0
 
+# Enable automatic mixed precision for training
+# Note that this does not change model's inference behavior.
+# To use AMP in inference, run inference under autocast()
+_C.SOLVER.AMP = CN({"ENABLED": False})
+_C.SOLVER.OPTIMIZER = "AdamW"
 # ---------------------------------------------------------------------------- #
 # Specific test options
 # ---------------------------------------------------------------------------- #

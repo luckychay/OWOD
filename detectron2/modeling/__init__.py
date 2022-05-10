@@ -3,7 +3,7 @@ Description:
 Version: 
 Author: Xuanying Chen
 Date: 2021-10-17 12:26:23
-LastEditTime: 2021-10-17 12:31:11
+LastEditTime: 2022-05-10 14:33:36
 '''
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from detectron2.layers import ShapeSpec
@@ -17,7 +17,7 @@ from .backbone import (
     ResNetBlockBase,
     build_backbone,
     build_resnet_backbone,
-    build_swin_backbone,
+    build_swint_backbone,
     make_stage,
 )
 from .meta_arch import (

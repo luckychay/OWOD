@@ -16,10 +16,10 @@ MODEL:
     DROP_PATH_RATE: 0.2
     APE: False
     PATCH_NORM: True
-    OUT_FEATURES: ["swin0", "swin1", "swin2", "swin3"]
+    OUT_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
     USE_CHECKPOINT: False
   FPN:
-    IN_FEATURES: ["swin0", "swin1", "swin2", "swin3"]
+    IN_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
     #IN_CHANNELS: [96, 192, 384, 768]
     #OUT_CHANNELS: 256
     #NUM_OUTS: 5

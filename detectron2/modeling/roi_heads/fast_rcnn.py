@@ -420,6 +420,7 @@ class FastRCNNOutputLayers(nn.Module):
         output_dir,
         feat_store_path,
         margin,
+        checkpoint_period,
         num_classes: int,
         test_score_thresh: float = 0.0,
         test_nms_thresh: float = 0.5,
@@ -489,6 +490,7 @@ class FastRCNNOutputLayers(nn.Module):
 
         self.max_iterations = max_iterations
         self.feature_store_is_stored = False
+        self.checkpoint_period = checkpoint_period
         self.output_dir = output_dir
         self.feat_store_path = feat_store_path
         self.feature_store_save_loc = os.path.join(self.output_dir, self.feat_store_path, 'feat.pt')
@@ -496,11 +498,19 @@ class FastRCNNOutputLayers(nn.Module):
         if os.path.isfile(self.feature_store_save_loc):
             logging.getLogger(__name__).info('Trying to load feature store from ' + self.feature_store_save_loc)
             self.feature_store = torch.load(self.feature_store_save_loc)
+            items = self.feature_store.retrieve(-1)
+            for index, item in enumerate(items):
+                if len(item) == 0:
+                    self.means[index] = None
+                else:
+                    mu = torch.tensor(item).mean(dim=0)
+                    self.means[index] = mu
         else:
             logging.getLogger(__name__).info('Feature store not found in ' +
                                              self.feature_store_save_loc + '. Creating new feature store.')
             self.feature_store = Store(num_classes + 1, clustering_items_per_class)
-        self.means = [None for _ in range(num_classes + 1)]
+            self.means = [None for _ in range(num_classes + 1)]
+
         self.margin = margin
 
         # self.ae_model = AE(input_size, clustering_z_dimension)
@@ -532,6 +542,7 @@ class FastRCNNOutputLayers(nn.Module):
             "output_dir"            : cfg.OUTPUT_DIR,
             "feat_store_path"       : cfg.OWOD.FEATURE_STORE_SAVE_PATH,
             "margin"                : cfg.OWOD.CLUSTERING.MARGIN,
+            "checkpoint_period"     : cfg.SOLVER.CHECKPOINT_PERIOD,
             # fmt: on
         }
 
@@ -561,7 +572,7 @@ class FastRCNNOutputLayers(nn.Module):
 
         storage = get_event_storage()
 
-        if storage.iter == self.max_iterations-1 and self.feature_store_is_stored is False and comm.is_main_process():
+        if (storage.iter + 1) % self.checkpoint_period == 0 and comm.is_main_process():
             logging.getLogger(__name__).info('Saving image store at iteration ' + str(storage.iter) + ' to ' + self.feature_store_save_loc)
             torch.save(self.feature_store, self.feature_store_save_loc)
             self.feature_store_is_stored = True

@@ -7,7 +7,6 @@ import os
 from numpy import disp
 import shortuuid
 import operator
-import shortuuid
 from typing import Dict, List, Optional, Tuple, Union
 import torch
 from torch import nn
@@ -152,6 +151,7 @@ class ROIHeads(torch.nn.Module):
         enable_thresold_autolabelling,
         unk_k,
         proposal_append_gt=True,
+        mavl_proposal=True,
     ):
         """
         NOTE: this interface is experimental.
@@ -170,6 +170,7 @@ class ROIHeads(torch.nn.Module):
         self.num_classes = num_classes
         self.proposal_matcher = proposal_matcher
         self.proposal_append_gt = proposal_append_gt
+        self.mavl_proposal = mavl_proposal
         self.enable_thresold_autolabelling = enable_thresold_autolabelling
         self.unk_k = unk_k
 
@@ -180,6 +181,7 @@ class ROIHeads(torch.nn.Module):
             "positive_fraction": cfg.MODEL.ROI_HEADS.POSITIVE_FRACTION,
             "num_classes": cfg.MODEL.ROI_HEADS.NUM_CLASSES,
             "proposal_append_gt": cfg.MODEL.ROI_HEADS.PROPOSAL_APPEND_GT,
+            "mavl_proposal": cfg.MODEL.ROI_HEADS.MAVL_PROPOSAL,
             # Matcher to assign box proposals to gt boxes
             "proposal_matcher": Matcher(
                 cfg.MODEL.ROI_HEADS.IOU_THRESHOLDS,
@@ -247,7 +249,7 @@ class ROIHeads(torch.nn.Module):
 
     @torch.no_grad()
     def label_and_sample_proposals(
-        self, proposals: List[Instances], targets: List[Instances]
+        self, proposals: List[Instances], targets: List[Instances],
     ) -> List[Instances]:
         """
         Prepare some proposals to be used to train the ROI heads.
@@ -914,7 +916,4 @@ class StandardROIHeads(ROIHeads):
         else:
             features = {f: features[f] for f in self.keypoint_in_features}
         return self.keypoint_head(features, instances)
-
-
-
 

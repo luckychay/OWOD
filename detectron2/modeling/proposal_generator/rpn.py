@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
+import os
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, cat
@@ -11,6 +12,10 @@ from detectron2.structures import Boxes, ImageList, Instances, pairwise_iou
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
+
+from tqdm import tqdm
+from ..proposal_generator.mavl.models.model import Model
+from ..proposal_generator.proposal_utils import add_mavl_dets_to_proposals
 
 from ..anchor_generator import build_anchor_generator
 from ..box_regression import Box2BoxTransform
@@ -448,6 +453,13 @@ class RPN(nn.Module):
         proposals = self.predict_proposals(
             anchors, pred_objectness_logits, pred_anchor_deltas, images.image_sizes
         )
+
+        ## use mavl to add more unknown propoals
+        checkpoints_path = "./mavl/MDef_DETR_r101_epoch20_ore.pth"
+        mavl_model = Model("mdef_detr", checkpoints_path).get_model()
+        mavl_boxes, _ = mavl_model.infer(images, caption="all objects") 
+        proposals = add_mavl_dets_to_proposals(mavl_boxes, proposals)
+
         return proposals, losses
 
     def predict_proposals(

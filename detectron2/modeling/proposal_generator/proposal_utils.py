@@ -168,3 +168,53 @@ def add_ground_truth_to_proposals_single_image(gt_boxes, proposals):
     new_proposals = Instances.cat([proposals, gt_proposal])
 
     return new_proposals
+def add_mavl_dets_to_proposals(mavl_boxes, proposals):
+    """
+    Call `add_mavl_dets_to_proposals_single_image` for all images.
+
+    Args:
+        mavl_boxes(list[Boxes]): list of N elements. Element i is a Boxes
+            representing the gound-truth for image i.
+        proposals (list[Instances]): list of N elements. Element i is a Instances
+            representing the proposals for image i.
+
+    Returns:
+        list[Instances]: list of N Instances. Each is the proposals for the image,
+            with field "proposal_boxes" and "objectness_logits".
+    """
+    assert mavl_boxes is not None
+
+    assert len(proposals) == len(mavl_boxes)
+    if len(proposals) == 0:
+        return proposals
+
+    return [
+        add_mavl_dets_to_proposals_single_image(mavl_boxes_i, proposals_i)
+        for mavl_boxes_i, proposals_i in zip(mavl_boxes, proposals)
+    ]
+
+
+def add_mavl_dets_to_proposals_single_image(mavl_boxes, proposals):
+    """
+    Augment `proposals` with ground-truth boxes from `gt_boxes`.
+
+    Args:
+        Same as `add_ground_truth_to_proposals`, but with gt_boxes and proposals
+        per image.
+
+    Returns:
+        Same as `add_ground_truth_to_proposals`, but for only one image.
+    """
+    device = proposals.objectness_logits.device
+    # Assign all mavl detection boxes an objectness logit corresponding to
+    # P(object) = sigmoid(logit) =~ 1.
+    mavl_logit_value = math.log((1.0 - 1e-10) / (1 - (1.0 - 1e-10)))
+    mavl_logits = mavl_logit_value * torch.ones(len(mavl_boxes), device=device)
+
+    # Concatenating mavl_boxes with proposals requires them to have the same fields
+    mavl_proposal = Instances(proposals.image_size)
+    mavl_proposal.proposal_boxes = mavl_boxes
+    mavl_proposal.objectness_logits = mavl_logits
+    new_proposals = Instances.cat([proposals, mavl_proposal])
+
+    return new_proposals

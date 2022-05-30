@@ -1,28 +1,11 @@
 MODEL:
   META_ARCHITECTURE: "GeneralizedRCNN"
   BACKBONE:
-    NAME: "build_swin_fpn_backbone"
-  SWINS:
-    PATCH_SIZE: 4
-    IN_CHANS: 3
-    EMBED_DIM: 96
-    TYPE: "T"
-    NUM_HEADS: [3, 6, 12, 24]
-    WINDOW_SIZE: 7
-    MLP_RATIO: 4.
-    QKV_BIAS: True
-    DROP_RATE: 0.
-    ATTN_DROP_RATE: 0.
-    DROP_PATH_RATE: 0.2
-    APE: False
-    PATCH_NORM: True
-    OUT_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
-    USE_CHECKPOINT: False
+    NAME: "build_resnet_fpn_backbone"
+  RESNETS:
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
   FPN:
-    IN_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
-    #IN_CHANNELS: [96, 192, 384, 768]
-    #OUT_CHANNELS: 256
-    #NUM_OUTS: 5
+    IN_FEATURES: ["res2", "res3", "res4", "res5"]
   ANCHOR_GENERATOR:
     SIZES: [[32], [64], [128], [256], [512]]  # One size for each in feature map
     ASPECT_RATIOS: [[0.5, 1.0, 2.0]]  # Three aspect ratios (same for all in feature maps)
@@ -36,28 +19,26 @@ MODEL:
     POST_NMS_TOPK_TRAIN: 1000
     POST_NMS_TOPK_TEST: 1000
   ROI_HEADS:
-    #    NUM_CLASSES: 81 # 0-79 Known class; 80 -> Unknown; 81 -> Background.
-    IN_FEATURES: ["p2", "p3", "p4", "p5"]
-    NUM_CLASSES: 81
     NAME: "StandardROIHeads"
+    IN_FEATURES: ["p2", "p3", "p4", "p5"]
   ROI_BOX_HEAD:
     NAME: "FastRCNNConvFCHead"
     NUM_FC: 2
     POOLER_RESOLUTION: 7
-  MASK_ON: False
-INPUT:
-  MIN_SIZE_TRAIN: (480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800)
-  MIN_SIZE_TEST: 800
+  ROI_MASK_HEAD:
+    NAME: "MaskRCNNConvUpsampleHead"
+    NUM_CONV: 4
+    POOLER_RESOLUTION: 14
 DATASETS:
   TRAIN: ("coco_2017_train",)
   TEST: ("coco_2017_val",)
-DATALOADER:
-  NUM_WORKERS: 1
 SOLVER:
   IMS_PER_BATCH: 16
   BASE_LR: 0.02
   STEPS: (60000, 80000)
   MAX_ITER: 90000
+INPUT:
+  MIN_SIZE_TRAIN: (640, 672, 704, 736, 768, 800)
 VERSION: 2
 OWOD:
   ENABLE_THRESHOLD_AUTOLABEL_UNK: True

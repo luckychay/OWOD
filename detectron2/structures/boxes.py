@@ -147,8 +147,11 @@ class Boxes:
         Args:
             tensor (Tensor[float]): a Nx4 matrix.  Each row is (x1, y1, x2, y2).
         """
-        device = tensor.device if isinstance(tensor, torch.Tensor) else torch.device("cpu")
-        tensor = torch.as_tensor(tensor, dtype=torch.float32, device=device)
+        if not isinstance(tensor, torch.Tensor):
+            tensor = np.asarray(tensor)
+            tensor = torch.as_tensor(tensor, dtype=torch.float32, device=torch.device("cpu"))
+        else:
+            tensor = tensor.to(torch.float32)
         if tensor.numel() == 0:
             # Use reshape, so we don't end up creating a new tensor that does not depend on
             # the inputs (and consequently confuses jit)

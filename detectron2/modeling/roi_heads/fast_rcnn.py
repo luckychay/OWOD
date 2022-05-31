@@ -243,12 +243,12 @@ class FastRCNNOutputs:
         else:
             self._log_accuracy()
             self.pred_class_logits[:, self.invalid_class_range] = -10e10
-            # self.log_logits(self.pred_class_logits, self.gt_classes)
+            self.log_logits(self.pred_class_logits, self.gt_classes)
             return F.cross_entropy(self.pred_class_logits, self.gt_classes, reduction="mean")
 
     def log_logits(self, logits, cls):
         data = (logits, cls)
-        location = '/home/fk1/workspace/OWOD/output/logits/' + shortuuid.uuid() + '.pkl'
+        location = '/content/drive/MyDrive/output/logits/' + shortuuid.uuid() + '.pkl'
         torch.save(data, location)
 
     def box_reg_loss(self):

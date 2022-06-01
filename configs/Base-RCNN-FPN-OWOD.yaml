@@ -19,6 +19,7 @@ MODEL:
     POST_NMS_TOPK_TRAIN: 1000
     POST_NMS_TOPK_TEST: 1000
   ROI_HEADS:
+    NUM_CLASSES: 81
     NAME: "StandardROIHeads"
     IN_FEATURES: ["p2", "p3", "p4", "p5"]
   ROI_BOX_HEAD:

@@ -13,8 +13,6 @@ MODEL:
     OUT_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
   FPN:
     IN_FEATURES: ["stage2", "stage3", "stage4", "stage5"]
-ROI_HEADS:
-    NUM_CLASSES: 81
 SOLVER:
   # always reduce lr by 10X in the last 60k and 20k iterations 
   # Kaiming et al,Rethinking ImageNet Pre-training,2018

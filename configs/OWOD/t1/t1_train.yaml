@@ -1,4 +1,4 @@
-_BASE_: "../../Base-RCNN-C4-OWOD.yaml"
+_BASE_: "../../Base-RCNN-FPN-OWOD.yaml"
 MODEL:
   WEIGHTS: /content/drive/MyDrive/R-50.pkl
 DATASETS:

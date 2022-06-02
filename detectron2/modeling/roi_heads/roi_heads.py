@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import heapq
 import os
+from numpy import disp
 import shortuuid
 import operator
 import shortuuid
@@ -228,6 +229,7 @@ class ROIHeads(torch.nn.Module):
         sampled_idxs = torch.cat([sampled_fg_idxs, sampled_bg_idxs], dim=0)
         gt_classes_ss = gt_classes[sampled_idxs]
 
+        ##********************use RPN to autolabel unknown objects**************************
         if self.enable_thresold_autolabelling:
             matched_labels_ss = matched_labels[sampled_idxs]
             pred_objectness_score_ss = objectness_logits[sampled_idxs]
@@ -543,6 +545,9 @@ class StandardROIHeads(ROIHeads):
         box_pooler: ROIPooler,
         box_head: nn.Module,
         box_predictor: nn.Module,
+        enable_clustering: bool,
+        compute_energy_flag: bool,
+        energy_save_path: str,
         mask_in_features: Optional[List[str]] = None,
         mask_pooler: Optional[ROIPooler] = None,
         mask_head: Optional[nn.Module] = None,
@@ -579,6 +584,10 @@ class StandardROIHeads(ROIHeads):
         self.box_head = box_head
         self.box_predictor = box_predictor
 
+        self.enable_clustering = enable_clustering
+        self.compute_energy_flag = compute_energy_flag
+        self.energy_save_path = energy_save_path
+
         self.mask_on = mask_in_features is not None
         if self.mask_on:
             self.mask_in_features = mask_in_features
@@ -603,6 +612,8 @@ class StandardROIHeads(ROIHeads):
         # Such subclasses will need to handle calling their overridden _init_*_head methods.
         if inspect.ismethod(cls._init_box_head):
             ret.update(cls._init_box_head(cfg, input_shape))
+        if inspect.ismethod(cls._init_box_head):
+            ret.update(cls._init_owod_head(cfg, input_shape))
         if inspect.ismethod(cls._init_mask_head):
             ret.update(cls._init_mask_head(cfg, input_shape))
         if inspect.ismethod(cls._init_keypoint_head):
@@ -714,6 +725,26 @@ class StandardROIHeads(ROIHeads):
         ret["keypoint_head"] = build_keypoint_head(cfg, shape)
         return ret
 
+    @classmethod
+    def _init_owod_head(cls, cfg, input_shape):
+        enable_clustering = cfg.OWOD.ENABLE_CLUSTERING
+        compute_energy_flag = cfg.OWOD.COMPUTE_ENERGY
+        print("enable_clustering",enable_clustering)
+        print("compute_energy_flag",compute_energy_flag)
+        energy_save_path = os.path.join(cfg.OUTPUT_DIR, cfg.OWOD.ENERGY_SAVE_PATH)
+        return {
+            "enable_clustering": enable_clustering,
+            "compute_energy_flag": compute_energy_flag,
+            "energy_save_path": energy_save_path,
+        }
+
+    def compute_energy(self, predictions, proposals):
+        gt_classes = torch.cat([p.gt_classes for p in proposals])
+        logits = predictions[0]
+        data = (logits, gt_classes)
+        location = os.path.join(self.energy_save_path, shortuuid.uuid() + '.pkl')
+        torch.save(data, location)
+
     def forward(
         self,
         images: ImageList,
@@ -731,12 +762,14 @@ class StandardROIHeads(ROIHeads):
         del targets
 
         if self.training:
+
             losses = self._forward_box(features, proposals)
             # Usually the original proposals used by the box head are used by the mask, keypoint
             # heads. But when `self.train_on_pred_boxes is True`, proposals will contain boxes
             # predicted by the box head.
-            losses.update(self._forward_mask(features, proposals))
-            losses.update(self._forward_keypoint(features, proposals))
+            
+            # losses.update(self._forward_mask(features, proposals))
+            # losses.update(self._forward_keypoint(features, proposals))
             return proposals, losses
         else:
             pred_instances = self._forward_box(features, proposals)
@@ -795,10 +828,15 @@ class StandardROIHeads(ROIHeads):
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
         box_features = self.box_head(box_features)
         predictions = self.box_predictor(box_features)
-        del box_features
 
         if self.training:
-            losses = self.box_predictor.losses(predictions, proposals)
+            if self.enable_clustering:
+                self.box_predictor.update_feature_store(box_features, proposals)
+            if self.compute_energy_flag:
+                self.compute_energy(predictions, proposals)
+
+            losses = self.box_predictor.losses(predictions, proposals, box_features)
+            del box_features
             # proposals is modified in-place below, so losses must be computed first.
             if self.train_on_pred_boxes:
                 with torch.no_grad():
@@ -876,3 +914,7 @@ class StandardROIHeads(ROIHeads):
         else:
             features = {f: features[f] for f in self.keypoint_in_features}
         return self.keypoint_head(features, instances)
+
+
+
+

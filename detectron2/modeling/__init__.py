@@ -1,10 +1,3 @@
-'''
-Description: 
-Version: 
-Author: Xuanying Chen
-Date: 2022-05-24 16:32:42
-LastEditTime: 2022-05-24 16:34:59
-'''
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from detectron2.layers import ShapeSpec
 

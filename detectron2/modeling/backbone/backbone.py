@@ -1,3 +1,10 @@
+'''
+Description: 
+Version: 
+Author: Xuanying Chen
+Date: 2021-10-18 02:11:01
+LastEditTime: 2021-10-18 09:00:37
+'''
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from abc import ABCMeta, abstractmethod
 import torch.nn as nn
@@ -44,6 +51,7 @@ class Backbone(nn.Module, metaclass=ABCMeta):
         Returns:
             dict[str->ShapeSpec]
         """
+        
         # this is a backward-compatible default
         return {
             name: ShapeSpec(
@@ -51,3 +59,4 @@ class Backbone(nn.Module, metaclass=ABCMeta):
             )
             for name in self._out_features
         }
+        ## it returns a dict 

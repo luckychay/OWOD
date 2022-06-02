@@ -399,6 +399,7 @@ class ResNet(Backbone):
             self._out_feature_strides[name] = current_stride = int(
                 current_stride * np.prod([k.stride for k in blocks])
             )
+            
             self._out_feature_channels[name] = curr_channels = blocks[-1].out_channels
 
         if num_classes is not None:
@@ -411,8 +412,10 @@ class ResNet(Backbone):
             nn.init.normal_(self.linear.weight, std=0.01)
             name = "linear"
 
+
         if out_features is None:
             out_features = [name]
+        print("out_features",out_features)
         self._out_features = out_features
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
@@ -541,6 +544,7 @@ class ResNet(Backbone):
                 block_class(in_channels=in_channels, out_channels=out_channels, **curr_kwargs)
             )
             in_channels = out_channels
+           
         return blocks
 
 
@@ -572,7 +576,7 @@ def build_resnet_backbone(cfg, input_shape):
         out_channels=cfg.MODEL.RESNETS.STEM_OUT_CHANNELS,
         norm=norm,
     )
-
+    
     # fmt: off
     freeze_at           = cfg.MODEL.BACKBONE.FREEZE_AT
     out_features        = cfg.MODEL.RESNETS.OUT_FEATURES
@@ -617,11 +621,12 @@ def build_resnet_backbone(cfg, input_shape):
         first_stride = 1 if idx == 0 or (stage_idx == 5 and dilation == 2) else 2
         stage_kargs = {
             "num_blocks": num_blocks_per_stage[idx],
-            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1),
+            "stride_per_block": [first_stride] + [1] * (num_blocks_per_stage[idx] - 1), ## except the first stride of every stage, all other stride are 1 
             "in_channels": in_channels,
             "out_channels": out_channels,
             "norm": norm,
         }
+        
         # Use BasicBlock for R18 and R34.
         if depth in [18, 34]:
             stage_kargs["block_class"] = BasicBlock
@@ -636,7 +641,7 @@ def build_resnet_backbone(cfg, input_shape):
                 stage_kargs["deform_num_groups"] = deform_num_groups
             else:
                 stage_kargs["block_class"] = BottleneckBlock
-        blocks = ResNet.make_stage(**stage_kargs)
+        blocks = ResNet.make_stage(**stage_kargs) ##special arguments path way
         in_channels = out_channels
         out_channels *= 2
         bottleneck_channels *= 2

@@ -1,4 +1,4 @@
-_BASE_: "../../SWIN-RCNN-FPN-OWOD.yaml"
+_BASE_: "../../Swin-RCNN-FPN-OWOD.yaml"
 MODEL:
   WEIGHTS: "/home/joseph/workspace/OWOD/output/t1_clustering_with_save/model_final.pth"
 DATASETS:

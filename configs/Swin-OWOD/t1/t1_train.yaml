@@ -6,7 +6,7 @@ DATASETS:
   TEST: ('voc_coco_2007_test', 't1_voc_coco_2007_known_test')   # voc_coco_2007_test, t1_voc_coco_2007_test, t1_voc_coco_2007_val
 OUTPUT_DIR: "/home/appuser/OWOD/output/t1"
 SOLVER:
-  STEPS: (24000, 32000)
+  STEPS: (30000, 34000)
   MAX_ITER: 36000
   WARMUP_ITERS: 100
   WEIGHT_DECAY: 0.05

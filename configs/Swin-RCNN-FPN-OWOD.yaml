@@ -16,14 +16,14 @@ MODEL:
 SOLVER:
   # always reduce lr by 10X in the last 60k and 20k iterations 
   # Kaiming et al,Rethinking ImageNet Pre-training,2018
-  STEPS: (90000, 94000) 
+  STEPS: (30000, 34000) 
   # 1X learning schedule ~=12 epochs
-  MAX_ITER: 96000
+  MAX_ITER: 36000
   WEIGHT_DECAY: 0.05
   # less gpu should use smaller lr, linear rule 
   # Priya Goyal et al, Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour
   BASE_LR: 0.00001
-  WARMUP_ITERS: 800
+  WARMUP_ITERS: 100
   AMP:
     ENABLED: True
 DATALOADER:

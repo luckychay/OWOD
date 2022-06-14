@@ -249,7 +249,7 @@ class FastRCNNOutputs:
 
     def log_logits(self, logits, cls):
         data = (logits, cls)
-        location = '/home/fk1/workspace/OWOD/output/logits/' + shortuuid.uuid() + '.pkl'
+        location = '/content/drive/MyDrive/output/logits/' + shortuuid.uuid() + '.pkl'
         torch.save(data, location)
 
     def box_reg_loss(self):

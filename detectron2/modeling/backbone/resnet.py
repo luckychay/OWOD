@@ -147,10 +147,6 @@ class BottleneckBlock(CNNBlockBase):
         # stride in the 3x3 conv
         stride_1x1, stride_3x3 = (stride, 1) if stride_in_1x1 else (1, stride)
 
-        print("stride",stride)
-        print("stride_1X1",stride_1x1)
-        print("stride_3x3",stride_3x3)
-
         self.conv1 = Conv2d(
             in_channels,
             bottleneck_channels,

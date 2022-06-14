@@ -93,7 +93,6 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
 
     def update_label_based_on_energy(self, logits, classes):
         if not self.energy_distribution_loaded:
-            print("-------------------------------energy not loaded....")
             return classes
         else:
             cls = classes

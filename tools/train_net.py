@@ -145,7 +145,7 @@ class Trainer(DefaultTrainer):
 
         optimizer_type = cfg.SOLVER.OPTIMIZER
         if optimizer_type == "SGD":
-            optimizer = maybe_add_gradient_clipping(torch.optim.SGD)(
+            optimizer = maybe_add_gradient_clipping(cfg, torch.optim.SGD)(
                 params, cfg.SOLVER.BASE_LR, momentum=cfg.SOLVER.MOMENTUM,
                 nesterov=cfg.SOLVER.NESTEROV,
                 weight_decay=cfg.SOLVER.WEIGHT_DECAY,

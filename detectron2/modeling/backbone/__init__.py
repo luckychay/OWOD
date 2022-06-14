@@ -1,10 +1,3 @@
-'''
-Description: 
-Version: 
-Author: Xuanying Chen
-Date: 2021-10-17 12:35:52
-LastEditTime: 2022-05-10 13:58:01
-'''
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from .build import build_backbone, BACKBONE_REGISTRY  # noqa F401 isort:skip
 

@@ -7,7 +7,7 @@ MODEL:
     #    NUM_CLASSES: 81 # 0-79 Known class; 80 -> Unknown; 81 -> Background.
     NUM_CLASSES: 81
     NAME: "Res5ROIHeads"
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: /content/drive/MyDrive/R-50.pkl
   MASK_ON: False
   RESNETS:
     DEPTH: 50
@@ -22,6 +22,8 @@ SOLVER:
   BASE_LR: 0.02
   STEPS: (60000, 80000)
   MAX_ITER: 90000
+DATALOADER:
+  NUM_WORKERS: 2
 VERSION: 2
 OWOD:
   ENABLE_THRESHOLD_AUTOLABEL_UNK: True

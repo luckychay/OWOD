@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
 import os
+import sys
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, cat
@@ -13,8 +14,9 @@ from detectron2.utils.events import get_event_storage
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.utils.registry import Registry
 
+sys.path.append("detectron2/modeling/proposal_generator/mavl/")
 from tqdm import tqdm
-from ..proposal_generator.mavl.models.model import Model
+from models.model import Model
 from ..proposal_generator.proposal_utils import add_mavl_dets_to_proposals
 
 from ..anchor_generator import build_anchor_generator

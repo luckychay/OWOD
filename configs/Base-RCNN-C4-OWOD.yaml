@@ -7,6 +7,7 @@ MODEL:
     #    NUM_CLASSES: 81 # 0-79 Known class; 80 -> Unknown; 81 -> Background.
     NUM_CLASSES: 81
     NAME: "Res5ROIHeads"
+    MAVL_PROPOSAL: True
   WEIGHTS: /content/drive/MyDrive/R-50.pkl
   MASK_ON: False
   RESNETS:

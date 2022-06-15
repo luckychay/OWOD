@@ -6,6 +6,7 @@ from fvcore.nn import giou_loss, smooth_l1_loss
 from torch import nn
 import os
 import sys
+import numpy as np
 
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec, cat
@@ -457,9 +458,14 @@ class RPN(nn.Module):
         )
 
         ## use mavl to add more unknown propoals
-        checkpoints_path = "./mavl/MDef_DETR_r101_epoch20_ore.pth"
+        checkpoints_path = "/content/drive/MyDrive/MDef_DETR_r101_epoch20_ore.pth"
+        print("___________maval__________________")
         mavl_model = Model("mdef_detr", checkpoints_path).get_model()
         mavl_boxes, _ = mavl_model.infer(images, caption="all objects") 
+        mavl_boxes = np.asarray(mavl_boxes)
+        mavl_boxes = torch.as_tensor(mavl_boxes, dtype=torch.float32, device=torch.device("cuda:0"))
+        mavl_boxes.requires_grad = True
+        mavl_boxes = [Boxes(mavl_boxes)]
         proposals = add_mavl_dets_to_proposals(mavl_boxes, proposals)
 
         return proposals, losses
